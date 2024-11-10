@@ -15,10 +15,9 @@ private:
 public:
     Point();
     Point(double position[], unsigned dim);
+    void setPosition(double position, unsigned axis);
     void setPosition(double position[], unsigned dim);
-    void setPosition(unsigned index, double value);
-    void rotate(double angle, unsigned axis1, unsigned axis2);
-    double getPosition(unsigned index);
+    double getPosition(unsigned axis);
 };
 
 class Line{
@@ -29,10 +28,9 @@ public:
     Line();
     Line(Point* p1, Point* p2);
     void setPoints(Point* p1, Point* p2);
-    void setPoint(unsigned index, Point* p);
+    void setPoint(Point* p, unsigned index);
     void setColor(float red, float green, float blue);
-    void setColor(unsigned index, float value);
-    void rotate(double angle, unsigned axis1, unsigned axis2);
+    void setColor(float value, unsigned index);
     float red();
     float green();
     float blue();
@@ -41,36 +39,26 @@ public:
 
 class Object{
 private:
-    unsigned n_points;
     unsigned n_lines;
-    double position[MAX_DIMENSIONS];
+    unsigned n_points;
     double scale[MAX_DIMENSIONS];
-    Point points[MAX_POINTS];
+    double position[MAX_DIMENSIONS];
     Line lines[MAX_LINES];
+    Point points[MAX_POINTS];
     void load(std::string object);
 public:
     Object(std::string object);
     Object(std::string object, double scale);
     void setScale(double scale);
+    void setScale(double scale, unsigned axis);
+    void setPosition(double position, unsigned axis);
+    void stretch(double factor);
+    void stretch(double factor, unsigned axis);
+    void translate(double amount, unsigned axis);
     void rotate(double angle, unsigned axis1, unsigned axis2);
-    double getScale(unsigned index);
-    unsigned linesCount();
-    Line getLine(unsigned index);
+    void draw(double xcp, double ycp, double zcp, double zvp);
+    double getScale(unsigned axis);
+    double getPosition(unsigned axis);
 };
-
-// class Tesseract{
-// private:
-//     Point points[16];
-//     Line lines[32];
-
-//     void init(double size);
-//     void updateLines();
-// public:
-//     Tesseract();
-//     Tesseract(double size);
-//     const int linesCount();
-//     Line getLine(unsigned index);
-//     void rotate(double angle, unsigned axis1, unsigned axis2);
-// };
 
 #endif

@@ -46,7 +46,7 @@ void update(int value)
 
 	if(fpsDisplayTimer < 0) 
 	{
-		std::cout << "FPS: " << (int)(meanFPS/fpsCount) << std::endl;
+		//std::cout << "FPS: " << (int)(meanFPS/fpsCount) << std::endl;
 		fpsDisplayTimer = FPS_DISPLAY_RATE;
 		meanFPS = 0;
 		fpsCount = 0;
@@ -100,36 +100,17 @@ void init(int argc, char **argv) {
 
 void draw()
 {
-    double x, y, z, w, u;
     double xcp = 0;
     double ycp = 0;
     double zcp = 1000;
     double zvp = 200;
-    Point p;
-    Line l;
-    
+
     glViewport(0, 0, 500, 500);
 
     glClear(GL_COLOR_BUFFER_BIT);
-    glClearColor(1.0, 1.0, 1.0, 1.0);
+    glClearColor(0.192, 0.133, 0.173, 1.0);
 
-    glBegin(GL_LINES);
-        for(int i = 0; i < cube.linesCount(); i++) {
-            l = cube.getLine(i);
-            glColor4f(l.red(), l.green(), l.blue(), 1.0);
-            for(int j = 0; j < 2; j++) {
-                p = l.getPoint(j);
-                x = p.getPosition(0);
-                y = p.getPosition(1);
-                z = p.getPosition(2);
-                w = p.getPosition(3);
-
-                u = (zcp - zvp) / (zcp - z);
-
-                glVertex2f((1 - u) * xcp + u * x, (1 - u) * ycp + u * y); 
-            }
-        }
-    glEnd();
+    cube.draw(xcp, ycp, zcp, zvp);
 
     glFlush();
 }

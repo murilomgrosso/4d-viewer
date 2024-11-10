@@ -3,6 +3,8 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <GL/glut.h>
+#include <GL/gl.h>
 #include "objects.h"
 
 /*------------------------- POINT -------------------------*/
@@ -13,26 +15,17 @@ Point::Point(double position[], unsigned dim) {
 
 void Point::setPosition(double position[], unsigned dim) {
     for(int i = 0; i < dim; i++)
-        setPosition(i, position[i]);
+        setPosition(position[i], i);
 }
 
-void Point::setPosition(unsigned index, double value) {
-    if(index < MAX_DIMENSIONS)
-        position[index] = value;
+void Point::setPosition(double position, unsigned axis) {
+    if(axis < MAX_DIMENSIONS)
+        this->position[axis] = position;
 }
 
-void Point::rotate(double angle, unsigned axis1, unsigned axis2) {
-    double prevAxis1 = position[axis1];
-    double prevAxis2 = position[axis2];
-
-    angle = angle * (M_PI / 180);
-    position[axis1] = prevAxis1 * cos(angle) - prevAxis2 * sin(angle);
-    position[axis2] = prevAxis1 * sin(angle) + prevAxis2 * cos(angle);
-}
-
-double Point::getPosition(unsigned index) {
-    if(index < MAX_DIMENSIONS)
-        return position[index];
+double Point::getPosition(unsigned axis) {
+    if(axis < MAX_DIMENSIONS)
+        return position[axis];
     return 0;
 }
 
@@ -47,7 +40,7 @@ void Line::setPoints(Point* p1, Point* p2) {
     points[1] = p2;
 }
 
-void Line::setPoint(unsigned index, Point* p) {
+void Line::setPoint(Point* p, unsigned index) {
     if(index > 1){
         std::cerr << "Point index in line must be only 0 or 1!" << std::endl; 
         return;
@@ -61,7 +54,7 @@ void Line::setColor(float red, float green, float blue) {
     color[2] = blue;
 }
 
-void Line::setColor(unsigned index, float value) {
+void Line::setColor(float value, unsigned index) {
     if(index > 2){
         std::cerr << "Color index in line must be only 0, 1 or 2!" << std::endl; 
         return;
@@ -69,16 +62,16 @@ void Line::setColor(unsigned index, float value) {
     color[index] = value;
 }
 
-void Line::rotate(double angle, unsigned axis1, unsigned axis2) {
-    points[0]->rotate(angle, axis1, axis2);
-    points[1]->rotate(angle, axis1, axis2);
-}
-
 float Line::red() { return color[0]; }
 float Line::green() { return color[1]; }
 float Line::blue() { return color[2]; }
 
 Point Line::getPoint(unsigned index) {
+    if(index > 1){
+        Point emptyPoint;
+        std::cerr << "Point index in line must be only 0 or 1!" << std::endl; 
+        return emptyPoint;
+    }
     return *points[index];
 }
 
@@ -95,22 +88,87 @@ Object::Object(std::string object, double scale) {
     setScale(scale);
 }
 
+void Object::draw(double xcp, double ycp, double zcp, double zvp) {
+    double x, y, z, w, u;
+    Point p;
+    Line l;
+
+    glBegin(GL_LINES);
+        for(int i = 0; i < n_lines; i++) {
+            l = lines[i];
+            glColor4f(l.red(), l.green(), l.blue(), 1.0);
+            for(int j = 0; j < 2; j++) {
+                p = l.getPoint(j);
+                x = p.getPosition(0);
+                y = p.getPosition(1);
+                z = p.getPosition(2);
+                w = p.getPosition(3);
+
+                u = (zcp - zvp) / (zcp - z);
+
+                glVertex2f((1 - u) * xcp + u * x, (1 - u) * ycp + u * y); 
+            }
+        }
+    glEnd();
+}
+
 void Object::setScale(double scale) {
-    for(int i = 0; i < MAX_DIMENSIONS; i++) {
-        for(int p = 0; p < n_points; p++)
-            points[p].setPosition(i, points[p].getPosition(i) * scale / this->scale[i]);
-        this->scale[i] = scale;
-    }
+    for(int i = 0; i < MAX_DIMENSIONS; i++)
+        setScale(scale, i);
+}
+
+void Object::setScale(double scale, unsigned axis) {
+    for(int p = 0; p < n_points; p++)
+        points[p].setPosition(points[p].getPosition(axis) * scale / this->scale[axis], axis);
+    this->scale[axis] = scale;
+}
+
+void Object::setPosition(double position, unsigned axis) {
+    for(int p = 0; p < n_points; p++)
+        points[p].setPosition(points[p].getPosition(axis) + position - this->position[axis], axis);
+    this->position[axis] = position;
+}
+
+void Object::stretch(double factor) {
+    for(int i = 0; i < MAX_DIMENSIONS; i++)
+        stretch(factor, i);
+}
+
+void Object::stretch(double factor, unsigned axis) {
+    setScale(scale[axis] * factor, axis);
+}
+
+void Object::translate(double amount, unsigned axis) {
+    setPosition(position[axis] + amount, axis);
 }
 
 void Object::rotate(double angle, unsigned axis1, unsigned axis2) {
-    for(int p = 0; p < n_points; p++)
-        points[p].rotate(angle, axis1, axis2);
+    double newAxis1, newAxis2, prevAxis1, prevAxis2;
+    double prevPos[MAX_DIMENSIONS];
+    angle = angle * (M_PI / 180);
+
+    for(int i = 0; i < MAX_DIMENSIONS; i++) {
+        prevPos[i] = position[i];
+        setPosition(0, i);
+    }
+    
+    for(int p = 0; p < n_points; p++) {
+        prevAxis1 = points[p].getPosition(axis1);
+        prevAxis2 = points[p].getPosition(axis2);
+
+        newAxis1 = prevAxis1 * cos(angle) - prevAxis2 * sin(angle);
+        newAxis2 = prevAxis1 * sin(angle) + prevAxis2 * cos(angle);
+
+        points[p].setPosition(newAxis1, axis1);
+        points[p].setPosition(newAxis2, axis2);
+    }
+
+    for(int i = 0; i < MAX_DIMENSIONS; i++)
+        setPosition(prevPos[i], i);
 }
 
-double Object::getScale(unsigned index) {
-    return scale[index];
-}
+double Object::getScale(unsigned axis) { return scale[axis]; }
+double Object::getPosition(unsigned axis) { return position[axis]; }
 
 void Object::load(std::string object) {
     std::ifstream file(OBJECT_PATH + object + OBJECT_EXTENSION);
@@ -166,19 +224,19 @@ void Object::load(std::string object) {
                     std::cerr << "Fail to load all dimensions of " << object << "!" << std::endl;
                     break;
                 }
-                points[n].setPosition(index, std::stod(token));
+                points[n].setPosition(std::stod(token), index);
                 index++;
             }
             else if(state == READ_LINES_STATE) {
                 if(index > 1)
-                    lines[n].setColor(index - 2, std::stof(token));
+                    lines[n].setColor(std::stof(token), index - 2);
                 else
                 {
                     int pointIndex = std::stoi(token);
                     if(pointIndex > n_points - 1)
                         std::cerr << "Invalid point index!" << std::endl;
                     else
-                        lines[n].setPoint(index, &points[pointIndex]);
+                        lines[n].setPoint(&points[pointIndex], index);
                 }
                 index++;
             }
@@ -192,99 +250,3 @@ void Object::load(std::string object) {
     }
     file.close();
 }
-
-unsigned Object::linesCount() {
-    return n_lines;
-}
-
-Line Object::getLine(unsigned index) {
-    if(index > n_lines - 1){
-        Line empty;
-        std::cerr << "Invalid line index!" << std::endl; 
-        return empty;
-    }
-
-    return lines[index];
-}
-
-
-/*------------------------- TESSERACT -------------------------*/
-// void Tesseract::init(double size) {
-//     for(int i = 0; i < 16; i++) {
-//         double position[4];
-
-//         position[0] = ((i % 2) / 1 * 2 - 1);
-//         position[1] = ((i % 4) / 2 * 2 - 1);
-//         position[2] = ((i % 8) / 4 * 2 - 1);
-//         position[3] = ((i % 16)/ 8 * 2 - 1);
-
-//         position[0] *= size/2;
-//         position[1] *= size/2;
-//         position[2] *= size/2;
-//         position[3] *= size/2;
-
-//         points[i].setPosition(position, 4);
-//     }
-
-//     updateLines();
-// }
-
-// void Tesseract::updateLines() {
-//     // Linhas paralelas ao eixo X
-//     for(int i = 0; i < 8; i++) {
-//         int index = i;
-//         lines[index].setPoints(
-//             points[i * 2], 
-//             points[i * 2 + 1]);
-//         lines[index].setColor(1, 0, 0);
-//     }
-
-//     // Linhas paralelas ao eixo Y
-//     for(int i = 0; i < 8; i++) {
-//         int index = i + 8;
-//         lines[index].setPoints(
-//             points[i % 2 + (i/2) * 4], 
-//             points[i % 2 + (i/2) * 4 + 2]);
-//         lines[index].setColor(0, 0, 1);
-//     }
-
-//     // Linhas paralelas ao eixo Z
-//     for(int i = 0; i < 8; i++) {
-//         int index = i + 16;
-//         lines[index].setPoints(
-//             points[i % 4 + (i/4) * 8], 
-//             points[i % 4 + (i/4) * 8 + 4]);
-//         lines[index].setColor(0, 1, 0);
-//     }
-
-//     // Linhas paralelas ao eixo W
-//     for(int i = 0; i < 8; i++) {
-//         int index = i + 24;
-//         lines[index].setPoints(
-//             points[i % 8 + (i/8) * 16], 
-//             points[i % 8 + (i/8) * 16 + 8]);
-//         lines[index].setColor(1, 0, 1);
-//     }
-// }
-
-// Tesseract::Tesseract() {
-//     init(1);
-// }
-// Tesseract::Tesseract(double size) {
-//     init(size);
-// }
-
-// const int Tesseract::linesCount() {
-//     return 32;
-// }
-
-// Line Tesseract::getLine(unsigned index) {
-//     return lines[index];
-// }
-
-// void Tesseract::rotate(double angle, unsigned axis1, unsigned axis2) {
-//     for(int i = 0; i < 16; i++) {
-//         points[i].rotate(angle, axis1, axis2);
-//     }
-//     updateLines();
-// }
