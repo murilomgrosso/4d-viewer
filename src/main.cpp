@@ -17,7 +17,7 @@ float deltaTime = 1.0/TARGET_FPS;							// Duracao de 1 frame (s)
 
 std::chrono::time_point<std::chrono::system_clock> startFrameTime;	// Inicio do frame
 
-Object cube("cube", 100);
+Object cube("solid_cube", 100);
 
 void init(int argc, char **argv);
 void update(int value);

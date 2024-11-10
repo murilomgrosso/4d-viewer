@@ -56,7 +56,7 @@ void Line::setColor(float red, float green, float blue) {
 
 void Line::setColor(float value, unsigned index) {
     if(index > 2){
-        std::cerr << "Color index in line must be only 0, 1 or 2!" << std::endl; 
+        std::cerr << "Color index must be only 0, 1 or 2!" << std::endl; 
         return;
     }
     color[index] = value;
@@ -70,6 +70,53 @@ Point Line::getPoint(unsigned index) {
     if(index > 1){
         Point emptyPoint;
         std::cerr << "Point index in line must be only 0 or 1!" << std::endl; 
+        return emptyPoint;
+    }
+    return *points[index];
+}
+
+/*------------------------- FACE -------------------------*/
+Face::Face() {}
+Face::Face(Point* p1, Point* p2, Point* p3) {
+    setPoints(p1, p2, p3);
+}
+
+void Face::setPoints(Point* p1, Point* p2, Point* p3) {
+    points[0] = p1;
+    points[1] = p2;
+    points[2] = p3;
+}
+
+void Face::setPoint(Point* p, unsigned index) {
+    if(index > 2){
+        std::cerr << "Point index in face must be 0, 1 or 2!" << std::endl; 
+        return;
+    }
+    points[index] = p;
+}
+
+void Face::setColor(float red, float green, float blue) {
+    color[0] = red;
+    color[1] = green;
+    color[2] = blue;
+}
+
+void Face::setColor(float value, unsigned index) {
+    if(index > 2){
+        std::cerr << "Color index must be only 0, 1 or 2!" << std::endl; 
+        return;
+    }
+    color[index] = value;
+}
+
+float Face::red() { return color[0]; }
+float Face::green() { return color[1]; }
+float Face::blue() { return color[2]; }
+
+Point Face::getPoint(unsigned index) {
+    if(index > 2){
+        Point emptyPoint;
+        std::cerr << "Point index in face must be 0, 1 or 2!" << std::endl; 
         return emptyPoint;
     }
     return *points[index];
@@ -92,6 +139,7 @@ void Object::draw(double xcp, double ycp, double zcp, double zvp) {
     double x, y, z, w, u;
     Point p;
     Line l;
+    Face f;
 
     glBegin(GL_LINES);
         for(int i = 0; i < n_lines; i++) {
@@ -99,6 +147,24 @@ void Object::draw(double xcp, double ycp, double zcp, double zvp) {
             glColor4f(l.red(), l.green(), l.blue(), 1.0);
             for(int j = 0; j < 2; j++) {
                 p = l.getPoint(j);
+                x = p.getPosition(0);
+                y = p.getPosition(1);
+                z = p.getPosition(2);
+                w = p.getPosition(3);
+
+                u = (zcp - zvp) / (zcp - z);
+
+                glVertex2f((1 - u) * xcp + u * x, (1 - u) * ycp + u * y); 
+            }
+        }
+    glEnd();
+
+    glBegin(GL_TRIANGLES);
+        for(int i = 0; i < n_faces; i++) {
+            f = faces[i];
+            glColor4f(f.red(), f.green(), f.blue(), 1.0);
+            for(int j = 0; j < 3; j++) {
+                p = f.getPoint(j);
                 x = p.getPosition(0);
                 y = p.getPosition(1);
                 z = p.getPosition(2);
@@ -203,6 +269,14 @@ void Object::load(std::string object) {
                 }
                 n_lines++;
                 break;
+            case READ_FACES_STATE:
+                if(n > MAX_FACES - 1) {
+                    std::cerr << "Too many faces in " << object << "!" << std::endl;
+                    n++;
+                    continue; 
+                }
+                n_faces++;
+                break;
             default:
                 break;
         }
@@ -216,6 +290,11 @@ void Object::load(std::string object) {
             }
             else if(!token.compare("#lines")) {
                 state = READ_LINES_STATE;
+                n = -1;
+                index = 0;
+            }
+            else if(!token.compare("#faces")) {
+                state = READ_FACES_STATE;
                 n = -1;
                 index = 0;
             }
@@ -237,6 +316,19 @@ void Object::load(std::string object) {
                         std::cerr << "Invalid point index!" << std::endl;
                     else
                         lines[n].setPoint(&points[pointIndex], index);
+                }
+                index++;
+            }
+            else if(state == READ_FACES_STATE) {
+                if(index > 2)
+                    faces[n].setColor(std::stof(token), index - 3);
+                else
+                {
+                    int pointIndex = std::stoi(token);
+                    if(pointIndex > n_points - 1)
+                        std::cerr << "Invalid point index!" << std::endl;
+                    else
+                        faces[n].setPoint(&points[pointIndex], index);
                 }
                 index++;
             }
