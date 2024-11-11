@@ -1,7 +1,6 @@
 #ifndef OBJECTS_H
 #define OBJECTS_H
 
-#define MAX_RENDERABLES 100
 #define MAX_DIMENSIONS 10
 #define MAX_POINTS 100
 #define MAX_LINES 99
@@ -14,9 +13,6 @@
 #define READ_LINES_STATE 2
 #define READ_FACES_STATE 3
 
-#define LINE_N_POINTS 2
-#define FACE_N_POINTS 3
-
 class Point{
 private:
     double position[MAX_DIMENSIONS];
@@ -28,34 +24,38 @@ public:
     double getPosition(unsigned axis);
 };
 
-class Renderable{
-protected:
-    unsigned nPoints;
+class Line {
+private:
     float color[3];
-    Point* points[3];
+    Point* points[2];
 public:
+    Line();
+    Line(Point* p1, Point* p2);
     void setColor(float red, float green, float blue);
     void setColor(float value, unsigned index);
     void setPoint(Point* p, unsigned index);
-    unsigned getNPoints();
+    void setPoints(Point* p1, Point* p2);
     float red();
     float green();
     float blue();
     Point getPoint(unsigned index);
 };
 
-class Line : public Renderable {
-public:
-    Line();
-    Line(Point* p1, Point* p2);
-    void setPoints(Point* p1, Point* p2);
-};
-
-class Face : public Renderable {
+class Face {
+private:
+    float color[3];
+    Point* points[3];
 public:
     Face();
     Face(Point* p1, Point* p2, Point* p3);
+    void setColor(float red, float green, float blue);
+    void setColor(float value, unsigned index);
+    void setPoint(Point* p, unsigned index);
     void setPoints(Point* p1, Point* p2, Point* p3);
+    float red();
+    float green();
+    float blue();
+    Point getPoint(unsigned index);
 };
 
 class Object{
@@ -79,10 +79,10 @@ public:
     void stretch(double factor, unsigned axis);
     void translate(double amount, unsigned axis);
     void rotate(double angle, unsigned axis1, unsigned axis2);
-    void draw(double xcp, double ycp, double zcp, double zvp);
-    void addToBuffer(Renderable (&renderables)[MAX_RENDERABLES], unsigned &nRenderables);
     double getScale(unsigned axis);
     double getPosition(unsigned axis);
+    bool getLine(Line &line, unsigned index);
+    bool getFace(Face &face, unsigned index);
 };
 
 #endif

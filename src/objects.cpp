@@ -29,48 +29,9 @@ double Point::getPosition(unsigned axis) {
     return 0;
 }
 
-/*------------------------- Renderable -------------------------*/
-void Renderable::setColor(float red, float green, float blue) {
-    color[0] = red;
-    color[1] = green;
-    color[2] = blue;
-}
-
-void Renderable::setColor(float value, unsigned index) {
-    if(index > 2){
-        std::cerr << "Color index must be only 0, 1 or 2!" << std::endl; 
-        return;
-    }
-    color[index] = value;
-}
-
-void Renderable::setPoint(Point* p, unsigned index) {
-    if(index > nPoints - 1){
-        std::cerr << "Point index must be less than " << nPoints << "!" << std::endl; 
-        return;
-    }
-    points[index] = p;
-}
-
-unsigned Renderable::getNPoints() { return nPoints; }
-
-float Renderable::red() { return color[0]; }
-float Renderable::green() { return color[1]; }
-float Renderable::blue() { return color[2]; }
-
-Point Renderable::getPoint(unsigned index) {
-    if(index > nPoints - 1){
-        Point emptyPoint;
-        std::cerr << "Point index must be less than " << nPoints << "!" << std::endl; 
-        return emptyPoint;
-    }
-    return *points[index];
-}
-
 /*------------------------- LINE -------------------------*/
-Line::Line() { nPoints = LINE_N_POINTS; }
+Line::Line() {}
 Line::Line(Point* p1, Point* p2) {
-    nPoints = LINE_N_POINTS;
     setPoints(p1, p2);
 }
 
@@ -79,10 +40,44 @@ void Line::setPoints(Point* p1, Point* p2) {
     points[1] = p2;
 }
 
+void Line::setColor(float red, float green, float blue) {
+    color[0] = red;
+    color[1] = green;
+    color[2] = blue;
+}
+
+void Line::setColor(float value, unsigned index) {
+    if(index > 2){
+        std::cerr << "Color index must be only 0, 1 or 2!" << std::endl; 
+        return;
+    }
+    color[index] = value;
+}
+
+void Line::setPoint(Point* p, unsigned index) {
+    if(index > 1){
+        std::cerr << "Point index in line must be 0 or 1!" << std::endl; 
+        return;
+    }
+    points[index] = p;
+}
+
+float Line::red() { return color[0]; }
+float Line::green() { return color[1]; }
+float Line::blue() { return color[2]; }
+
+Point Line::getPoint(unsigned index) {
+    if(index > 1){
+        Point emptyPoint;
+        std::cerr << "Point index in line must be 0 or 1!" << std::endl; 
+        return emptyPoint;
+    }
+    return *points[index];
+}
+
 /*------------------------- FACE -------------------------*/
-Face::Face() { nPoints = FACE_N_POINTS; }
+Face::Face() {}
 Face::Face(Point* p1, Point* p2, Point* p3) {
-    nPoints = FACE_N_POINTS;
     setPoints(p1, p2, p3);
 }
 
@@ -90,6 +85,41 @@ void Face::setPoints(Point* p1, Point* p2, Point* p3) {
     points[0] = p1;
     points[1] = p2;
     points[2] = p3;
+}
+
+void Face::setColor(float red, float green, float blue) {
+    color[0] = red;
+    color[1] = green;
+    color[2] = blue;
+}
+
+void Face::setColor(float value, unsigned index) {
+    if(index > 2){
+        std::cerr << "Color index must be only 0, 1 or 2!" << std::endl; 
+        return;
+    }
+    color[index] = value;
+}
+
+void Face::setPoint(Point* p, unsigned index) {
+    if(index > 2){
+        std::cerr << "Point index in face must be 0, 1 or 2!" << std::endl; 
+        return;
+    }
+    points[index] = p;
+}
+
+float Face::red() { return color[0]; }
+float Face::green() { return color[1]; }
+float Face::blue() { return color[2]; }
+
+Point Face::getPoint(unsigned index) {
+    if(index > 2){
+        Point emptyPoint;
+        std::cerr << "Point index in face must be 0, 1 or 2!" << std::endl; 
+        return emptyPoint;
+    }
+    return *points[index];
 }
 
 /*------------------------- OBJECTS -------------------------*/
@@ -103,27 +133,6 @@ Object::Object(std::string object, double scale) {
     setScale(1.0);
     load(object);
     setScale(scale);
-}
-
-void Object::addToBuffer(Renderable (&renderables)[MAX_RENDERABLES], unsigned &nRenderables) {
-    for(int i = 0; i < nLines; i++) {
-        if(MAX_RENDERABLES < nRenderables + 1) {
-            std::cerr << "Render buffer overflow!" << std::endl;
-            return;
-        }
-
-        renderables[nRenderables] = lines[i];
-        nRenderables++;
-    }
-    for(int i = 0; i < nFaces; i++) {
-        if(MAX_RENDERABLES < nRenderables + 1) {
-            std::cerr << "Render buffer overflow!" << std::endl;
-            return;
-        }
-
-        renderables[nRenderables] = faces[i];
-        nRenderables++;
-    }
 }
 
 void Object::setScale(double scale) {
@@ -289,4 +298,22 @@ void Object::load(std::string object) {
         n++;
     }
     file.close();
+}
+
+bool Object::getLine(Line &line, unsigned index) {
+    if(index + 1 > nLines)
+        return false;
+
+    line = lines[index];
+
+    return true;
+}
+
+bool Object::getFace(Face &face, unsigned index) {
+    if(index + 1 > nFaces)
+        return false;
+
+    face = faces[index];
+
+    return true;
 }

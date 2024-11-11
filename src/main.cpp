@@ -9,6 +9,8 @@
 #define TARGET_DELTATIME 1.0/TARGET_FPS					// Duracao alvo de um frame (s)
 #define FPS_DISPLAY_RATE 0.5							// Tempo (s) em que o FPS eh exibido na tela
 #define ROTATION_SPEED 50
+#define MAX_LINES_RENDERS 100
+#define MAX_FACE_RENDERS 100
 
 int fpsCount;												// Contador de FPS				
 float meanFPS;												// Armazena o valor do FPS atual medio
@@ -24,6 +26,7 @@ void init(int argc, char **argv);
 void update(int value);
 void updateView();
 void draw();
+void renderObject(Object object, Line (&lines)[MAX_LINES_RENDERS], Face (&faces)[MAX_FACE_RENDERS], unsigned &nLines, unsigned &nFaces);
 double clamp(double value, double min, double max);		// Limitacao do valor
 
 int main(int argc, char **argv) {
@@ -106,40 +109,34 @@ void init(int argc, char **argv) {
 
 void draw()
 {
-	unsigned nRenderables = 0;
+	Face face;
+	Line line;
+    Point p;
+
     double xcp = 0;
     double ycp = 0;
     double zcp = 1000;
     double zvp = 200;
     double x, y, z, w, u;
-    Point p;
-	Renderable renderables[MAX_RENDERABLES];
-	Renderable renderable;
+
+	unsigned nLines = 0;
+	unsigned nFaces = 0;
+	Line lines[MAX_LINES_RENDERS];
+	Face faces[MAX_FACE_RENDERS];
 
     glViewport(0, 0, 500, 500);
 
     glClear(GL_COLOR_BUFFER_BIT);
     glClearColor(0.192, 0.133, 0.173, 1.0);
 
-	tesseract.addToBuffer(renderables, nRenderables);
-    cube.addToBuffer(renderables, nRenderables);
+	renderObject(cube, lines, faces, nLines, nFaces);
 
-	for(int i = 0; i < nRenderables; i++) {
-		renderable = renderables[i];
-		switch(renderable.getNPoints()) {
-			case LINE_N_POINTS:
-				glBegin(GL_LINES);
-				break;
-			case FACE_N_POINTS:
-				glBegin(GL_TRIANGLES);
-				break;
-			default:
-				break;
-		}
-
-		glColor4f(renderable.red(), renderable.green(), renderable.blue(), 1.0);
-		for(int j = 0; j < renderable.getNPoints(); j++) {
-			p = renderable.getPoint(j);
+	glBegin(GL_LINES);
+	for(int i = 0; i < nLines; i++) {
+		line = lines[i];
+		glColor4f(line.red(), line.green(), line.blue(), 1.0);
+		for(int j = 0; j < 2; j++) {
+			p = line.getPoint(j);
 			x = p.getPosition(0);
 			y = p.getPosition(1);
 			z = p.getPosition(2);
@@ -149,10 +146,57 @@ void draw()
 
 			glVertex2f((1 - u) * xcp + u * x, (1 - u) * ycp + u * y); 
 		}
-    	glEnd();
 	}
+	glEnd();
+
+	glBegin(GL_TRIANGLES);
+	for(int i = 0; i < nFaces; i++) {
+		face = faces[i];
+		glColor4f(face.red(), face.green(), face.blue(), 1.0);
+		for(int j = 0; j < 3; j++) {
+			p = face.getPoint(j);
+			x = p.getPosition(0);
+			y = p.getPosition(1);
+			z = p.getPosition(2);
+			w = p.getPosition(3);
+
+			u = (zcp - zvp) / (zcp - z);
+
+			glVertex2f((1 - u) * xcp + u * x, (1 - u) * ycp + u * y); 
+		}
+	}
+	glEnd();
 
     glFlush();
+}
+
+void renderObject(Object object, Line (&lines)[MAX_LINES_RENDERS], Face (&faces)[MAX_FACE_RENDERS], unsigned &nLines, unsigned &nFaces) {
+	Face face;
+	Line line;
+
+	glBegin(GL_LINES);
+	for(int i = 0; object.getLine(line, i); i++) {
+		if(nLines > MAX_LINES_RENDERS - 1) {
+			std::cerr << "Line render buffer overflow!" << std::endl;
+			return;
+		}
+
+		lines[nLines] = line;
+		nLines++;
+	}
+	glEnd();
+
+	glBegin(GL_TRIANGLES);
+	for(int i = 0; object.getFace(face, i); i++) {
+		if(nFaces > MAX_FACE_RENDERS - 1) {
+			std::cerr << "Face render buffer overflow!" << std::endl;
+			return;
+		}
+
+		faces[nFaces] = face;
+		nFaces++;
+	}
+	glEnd();
 }
 
 double clamp(double value, double min, double max) 
