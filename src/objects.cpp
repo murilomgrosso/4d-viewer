@@ -29,9 +29,48 @@ double Point::getPosition(unsigned axis) {
     return 0;
 }
 
+/*------------------------- Renderable -------------------------*/
+void Renderable::setColor(float red, float green, float blue) {
+    color[0] = red;
+    color[1] = green;
+    color[2] = blue;
+}
+
+void Renderable::setColor(float value, unsigned index) {
+    if(index > 2){
+        std::cerr << "Color index must be only 0, 1 or 2!" << std::endl; 
+        return;
+    }
+    color[index] = value;
+}
+
+void Renderable::setPoint(Point* p, unsigned index) {
+    if(index > nPoints - 1){
+        std::cerr << "Point index must be less than " << nPoints << "!" << std::endl; 
+        return;
+    }
+    points[index] = p;
+}
+
+unsigned Renderable::getNPoints() { return nPoints; }
+
+float Renderable::red() { return color[0]; }
+float Renderable::green() { return color[1]; }
+float Renderable::blue() { return color[2]; }
+
+Point Renderable::getPoint(unsigned index) {
+    if(index > nPoints - 1){
+        Point emptyPoint;
+        std::cerr << "Point index must be less than " << nPoints << "!" << std::endl; 
+        return emptyPoint;
+    }
+    return *points[index];
+}
+
 /*------------------------- LINE -------------------------*/
-Line::Line() {}
+Line::Line() { nPoints = LINE_N_POINTS; }
 Line::Line(Point* p1, Point* p2) {
+    nPoints = LINE_N_POINTS;
     setPoints(p1, p2);
 }
 
@@ -40,44 +79,10 @@ void Line::setPoints(Point* p1, Point* p2) {
     points[1] = p2;
 }
 
-void Line::setPoint(Point* p, unsigned index) {
-    if(index > 1){
-        std::cerr << "Point index in line must be only 0 or 1!" << std::endl; 
-        return;
-    }
-    points[index] = p;
-}
-
-void Line::setColor(float red, float green, float blue) {
-    color[0] = red;
-    color[1] = green;
-    color[2] = blue;
-}
-
-void Line::setColor(float value, unsigned index) {
-    if(index > 2){
-        std::cerr << "Color index must be only 0, 1 or 2!" << std::endl; 
-        return;
-    }
-    color[index] = value;
-}
-
-float Line::red() { return color[0]; }
-float Line::green() { return color[1]; }
-float Line::blue() { return color[2]; }
-
-Point Line::getPoint(unsigned index) {
-    if(index > 1){
-        Point emptyPoint;
-        std::cerr << "Point index in line must be only 0 or 1!" << std::endl; 
-        return emptyPoint;
-    }
-    return *points[index];
-}
-
 /*------------------------- FACE -------------------------*/
-Face::Face() {}
+Face::Face() { nPoints = FACE_N_POINTS; }
 Face::Face(Point* p1, Point* p2, Point* p3) {
+    nPoints = FACE_N_POINTS;
     setPoints(p1, p2, p3);
 }
 
@@ -85,41 +90,6 @@ void Face::setPoints(Point* p1, Point* p2, Point* p3) {
     points[0] = p1;
     points[1] = p2;
     points[2] = p3;
-}
-
-void Face::setPoint(Point* p, unsigned index) {
-    if(index > 2){
-        std::cerr << "Point index in face must be 0, 1 or 2!" << std::endl; 
-        return;
-    }
-    points[index] = p;
-}
-
-void Face::setColor(float red, float green, float blue) {
-    color[0] = red;
-    color[1] = green;
-    color[2] = blue;
-}
-
-void Face::setColor(float value, unsigned index) {
-    if(index > 2){
-        std::cerr << "Color index must be only 0, 1 or 2!" << std::endl; 
-        return;
-    }
-    color[index] = value;
-}
-
-float Face::red() { return color[0]; }
-float Face::green() { return color[1]; }
-float Face::blue() { return color[2]; }
-
-Point Face::getPoint(unsigned index) {
-    if(index > 2){
-        Point emptyPoint;
-        std::cerr << "Point index in face must be 0, 1 or 2!" << std::endl; 
-        return emptyPoint;
-    }
-    return *points[index];
 }
 
 /*------------------------- OBJECTS -------------------------*/
@@ -135,47 +105,25 @@ Object::Object(std::string object, double scale) {
     setScale(scale);
 }
 
-void Object::draw(double xcp, double ycp, double zcp, double zvp) {
-    double x, y, z, w, u;
-    Point p;
-    Line l;
-    Face f;
-
-    glBegin(GL_LINES);
-        for(int i = 0; i < n_lines; i++) {
-            l = lines[i];
-            glColor4f(l.red(), l.green(), l.blue(), 1.0);
-            for(int j = 0; j < 2; j++) {
-                p = l.getPoint(j);
-                x = p.getPosition(0);
-                y = p.getPosition(1);
-                z = p.getPosition(2);
-                w = p.getPosition(3);
-
-                u = (zcp - zvp) / (zcp - z);
-
-                glVertex2f((1 - u) * xcp + u * x, (1 - u) * ycp + u * y); 
-            }
+void Object::addToBuffer(Renderable (&renderables)[MAX_RENDERABLES], unsigned &nRenderables) {
+    for(int i = 0; i < nLines; i++) {
+        if(MAX_RENDERABLES < nRenderables + 1) {
+            std::cerr << "Render buffer overflow!" << std::endl;
+            return;
         }
-    glEnd();
 
-    glBegin(GL_TRIANGLES);
-        for(int i = 0; i < n_faces; i++) {
-            f = faces[i];
-            glColor4f(f.red(), f.green(), f.blue(), 1.0);
-            for(int j = 0; j < 3; j++) {
-                p = f.getPoint(j);
-                x = p.getPosition(0);
-                y = p.getPosition(1);
-                z = p.getPosition(2);
-                w = p.getPosition(3);
-
-                u = (zcp - zvp) / (zcp - z);
-
-                glVertex2f((1 - u) * xcp + u * x, (1 - u) * ycp + u * y); 
-            }
+        renderables[nRenderables] = lines[i];
+        nRenderables++;
+    }
+    for(int i = 0; i < nFaces; i++) {
+        if(MAX_RENDERABLES < nRenderables + 1) {
+            std::cerr << "Render buffer overflow!" << std::endl;
+            return;
         }
-    glEnd();
+
+        renderables[nRenderables] = faces[i];
+        nRenderables++;
+    }
 }
 
 void Object::setScale(double scale) {
@@ -184,13 +132,13 @@ void Object::setScale(double scale) {
 }
 
 void Object::setScale(double scale, unsigned axis) {
-    for(int p = 0; p < n_points; p++)
+    for(int p = 0; p < nPoints; p++)
         points[p].setPosition(points[p].getPosition(axis) * scale / this->scale[axis], axis);
     this->scale[axis] = scale;
 }
 
 void Object::setPosition(double position, unsigned axis) {
-    for(int p = 0; p < n_points; p++)
+    for(int p = 0; p < nPoints; p++)
         points[p].setPosition(points[p].getPosition(axis) + position - this->position[axis], axis);
     this->position[axis] = position;
 }
@@ -218,7 +166,7 @@ void Object::rotate(double angle, unsigned axis1, unsigned axis2) {
         setPosition(0, i);
     }
     
-    for(int p = 0; p < n_points; p++) {
+    for(int p = 0; p < nPoints; p++) {
         prevAxis1 = points[p].getPosition(axis1);
         prevAxis2 = points[p].getPosition(axis2);
 
@@ -259,7 +207,7 @@ void Object::load(std::string object) {
                     n++;
                     continue;
                 }
-                n_points++;
+                nPoints++;
                 break;
             case READ_LINES_STATE:
                 if(n > MAX_LINES - 1) {
@@ -267,7 +215,7 @@ void Object::load(std::string object) {
                     n++;
                     continue; 
                 }
-                n_lines++;
+                nLines++;
                 break;
             case READ_FACES_STATE:
                 if(n > MAX_FACES - 1) {
@@ -275,7 +223,7 @@ void Object::load(std::string object) {
                     n++;
                     continue; 
                 }
-                n_faces++;
+                nFaces++;
                 break;
             default:
                 break;
@@ -312,7 +260,7 @@ void Object::load(std::string object) {
                 else
                 {
                     int pointIndex = std::stoi(token);
-                    if(pointIndex > n_points - 1)
+                    if(pointIndex > nPoints - 1)
                         std::cerr << "Invalid point index!" << std::endl;
                     else
                         lines[n].setPoint(&points[pointIndex], index);
@@ -325,7 +273,7 @@ void Object::load(std::string object) {
                 else
                 {
                     int pointIndex = std::stoi(token);
-                    if(pointIndex > n_points - 1)
+                    if(pointIndex > nPoints - 1)
                         std::cerr << "Invalid point index!" << std::endl;
                     else
                         faces[n].setPoint(&points[pointIndex], index);

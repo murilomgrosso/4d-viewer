@@ -18,6 +18,7 @@ float deltaTime = 1.0/TARGET_FPS;							// Duracao de 1 frame (s)
 std::chrono::time_point<std::chrono::system_clock> startFrameTime;	// Inicio do frame
 
 Object cube("solid_cube", 100);
+Object tesseract("wired_tesseract", 100);
 
 void init(int argc, char **argv);
 void update(int value);
@@ -56,8 +57,13 @@ void update(int value)
 
     cube.rotate(input::getHorizontalAxis() * ROTATION_SPEED * deltaTime, 2, 0);
     cube.rotate(-input::getVerticalAxis() * ROTATION_SPEED * deltaTime, 1, 2);
-    cube.rotate(-input::getMouseWheel() * ROTATION_SPEED * deltaTime, 0, 1);
+    //cube.rotate(-input::getMouseWheel() * ROTATION_SPEED * deltaTime, 0, 1);
     cube.rotate(input::getMouseButtonAxis() * ROTATION_SPEED * deltaTime, 3, 0);
+
+    tesseract.rotate(input::getHorizontalAxis() * ROTATION_SPEED * deltaTime, 2, 0);
+    tesseract.rotate(-input::getVerticalAxis() * ROTATION_SPEED * deltaTime, 1, 2);
+    //tesseract.rotate(-input::getMouseWheel() * ROTATION_SPEED * deltaTime, 0, 1);
+    tesseract.rotate(input::getMouseButtonAxis() * ROTATION_SPEED * deltaTime, 3, 0);
 
 	/* Atualiza a view */
 	updateView();
@@ -100,17 +106,51 @@ void init(int argc, char **argv) {
 
 void draw()
 {
+	unsigned nRenderables = 0;
     double xcp = 0;
     double ycp = 0;
     double zcp = 1000;
     double zvp = 200;
+    double x, y, z, w, u;
+    Point p;
+	Renderable renderables[MAX_RENDERABLES];
+	Renderable renderable;
 
     glViewport(0, 0, 500, 500);
 
     glClear(GL_COLOR_BUFFER_BIT);
     glClearColor(0.192, 0.133, 0.173, 1.0);
 
-    cube.draw(xcp, ycp, zcp, zvp);
+	tesseract.addToBuffer(renderables, nRenderables);
+    cube.addToBuffer(renderables, nRenderables);
+
+	for(int i = 0; i < nRenderables; i++) {
+		renderable = renderables[i];
+		switch(renderable.getNPoints()) {
+			case LINE_N_POINTS:
+				glBegin(GL_LINES);
+				break;
+			case FACE_N_POINTS:
+				glBegin(GL_TRIANGLES);
+				break;
+			default:
+				break;
+		}
+
+		glColor4f(renderable.red(), renderable.green(), renderable.blue(), 1.0);
+		for(int j = 0; j < renderable.getNPoints(); j++) {
+			p = renderable.getPoint(j);
+			x = p.getPosition(0);
+			y = p.getPosition(1);
+			z = p.getPosition(2);
+			w = p.getPosition(3);
+
+			u = (zcp - zvp) / (zcp - z);
+
+			glVertex2f((1 - u) * xcp + u * x, (1 - u) * ycp + u * y); 
+		}
+    	glEnd();
+	}
 
     glFlush();
 }
