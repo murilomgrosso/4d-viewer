@@ -37,7 +37,9 @@ int main(int argc, char **argv) {
 void update(int value) 
 {
 	double timeLeft;	// Tempo para fim do frame (ms)
+	double lastFrameTimestampCount;
 	std::chrono::duration<double> timeElapsed;
+	std::chrono::duration<double> lastFrameTimestamp;
 	std::chrono::time_point<std::chrono::system_clock> prevStartFrame;
 
 	/* Calcula o valor do FPS atual */
@@ -58,14 +60,17 @@ void update(int value)
 	else
 		fpsDisplayTimer -= deltaTime;
 
+	lastFrameTimestamp = std::chrono::duration<double>(prevStartFrame.time_since_epoch());
+	lastFrameTimestampCount = lastFrameTimestamp.count();
+
     cube.rotate(input::getHorizontalAxis() * ROTATION_SPEED * deltaTime, 2, 0);
     cube.rotate(-input::getVerticalAxis() * ROTATION_SPEED * deltaTime, 1, 2);
-    //cube.rotate(-input::getMouseWheel() * ROTATION_SPEED * deltaTime, 0, 1);
+    cube.rotate(-input::getMouseWheel(lastFrameTimestampCount) * ROTATION_SPEED * 4 * deltaTime, 0, 1);
     cube.rotate(input::getMouseButtonAxis() * ROTATION_SPEED * deltaTime, 3, 0);
 
     tesseract.rotate(input::getHorizontalAxis() * ROTATION_SPEED * deltaTime, 2, 0);
     tesseract.rotate(-input::getVerticalAxis() * ROTATION_SPEED * deltaTime, 1, 2);
-    //tesseract.rotate(-input::getMouseWheel() * ROTATION_SPEED * deltaTime, 0, 1);
+    tesseract.rotate(-input::getMouseWheel(lastFrameTimestampCount) * ROTATION_SPEED * 4 * deltaTime, 0, 1);
     tesseract.rotate(input::getMouseButtonAxis() * ROTATION_SPEED * deltaTime, 3, 0);
 
 	/* Atualiza a view */
@@ -130,6 +135,7 @@ void draw()
     glClearColor(0.192, 0.133, 0.173, 1.0);
 
 	renderObject(cube, lines, faces, nLines, nFaces);
+	renderObject(tesseract, lines, faces, nLines, nFaces);
 
 	glBegin(GL_LINES);
 	for(int i = 0; i < nLines; i++) {

@@ -1,28 +1,35 @@
 /* 
- * Funcoes para o gerenciamento do mouse e teclado.
+ * FUNCOES PARA GERENCIAMENTO DE MOUSE E TECLADO
  */
 
 #ifndef INPUT_H
 #define INPUT_H
 
+#define MAX_MOUSE_WHEEL_BUFFER 16
+
 /*----------------------------------------------------------------------------------------*/
-// DECLARACAO DAS FUNCOES
+// DECLARACAO DE FUNCOES
 
 namespace input{
+    static bool pressedMouse[3];            // Lista de botoes do mouse pressionados 
     static bool pressedKeys[255];           // Lista de teclas ASCII pressionadas
-    static bool pressedSpecialKeys[255];    // Lista de teclas especiais GLUT pressionadas
-    static bool pressedMouse[3];            // Lista de botoes do mouse pressionados    
-    static int mouseWheelCount;             // Contador do scroll do mouse
+    static bool pressedSpecialKeys[255];    // Lista de teclas especiais GLUT pressionadas   
+   
+    /*
+     * Lista circular de momentos scroll. Modulo dos valores representa o momento da acao.
+     * Sinal dos valores representa se foi um scroll-up (+) ou scroll-down (-).
+     */
+    static double scrollTimestamps[MAX_MOUSE_WHEEL_BUFFER] = {0};
+    static int lastScrollIndex = 0;         // Inicio da lista de scroll 
 
-    void keyboardDown(unsigned char key, int x, int y);     	// Gatilho para tecla pressionada
-    void keyboardUp(unsigned char key, int x, int y);       	// Gatilho para tecla liberada
-    void exitKey(unsigned char key, int x, int y);		        // Gatilho para tecla de saída (X)
-    void specialKeysDown(int key, int x, int y);            	// Gatilho para tecla especial pressionada
     void specialKeysUp(int key, int x, int y);              	// Gatilho para tecla especial liberada
-    void mouseManager(int button, int state, int x, int y);     // Gerencia o mouse
+    void specialKeysDown(int key, int x, int y);            	// Gatilho para tecla especial pressionada
+    void keyboardUp(unsigned char key, int x, int y);       	// Gatilho para tecla liberada
+    void keyboardDown(unsigned char key, int x, int y);     	// Gatilho para tecla pressionada
+    void mouseManager(int button, int state, int x, int y);     // Gatilho para botoes do mouse
 
-    bool isKeyPressed(unsigned char key);       // Verifica se a tecla ASCII foi pressionada
     bool isSpecialKeyPressed(int key);          // Verifica se a tecla especial GLUT foi pressionada
+    bool isKeyPressed(unsigned char key);       // Verifica se a tecla ASCII foi pressionada
     bool isMouseButtonPressed(int button);      // Verifica se botao do mouse foi pressionado
 
     bool isUpPressed();             // Verifica se W/UP foi pressionada
@@ -30,12 +37,10 @@ namespace input{
     bool isLeftPressed();           // Verifica se A/LEFT foi pressionada
     bool isRightPressed();          // Verifica se D/RIGHT foi pressionada
 
-    void endSimulation();           // Finaliza a simulacao
-
-    short getHorizontalAxis();      // Retorna a direcao horizontal (-1, 0 ou 1)
-    short getVerticalAxis();      	// Retorna a direcao vertical (-1, 0 ou 1)
-    short getMouseButtonAxis();     // Retorna a direcao do botao do mouse (-1, 0 ou 1)
-    short getMouseWheel();          // Retorna a direcao da wheel do mouse (-1, 0 ou 1)
+    short getVerticalAxis();      	            // Retorna a direcao vertical (-1, 0 ou 1)
+    short getHorizontalAxis();                  // Retorna a direcao horizontal (-1, 0 ou 1)
+    short getMouseButtonAxis();                 // Retorna a direcao do botao do mouse (-1, 0 ou 1)
+    short getMouseWheel(double thresholdTime);   // Retorna a direcao da wheel do mouse (-1, 0 ou 1)
 }
 
 #endif

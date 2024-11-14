@@ -1,25 +1,21 @@
 /* 
- * Funcoes para o gerenciamento do mouse e teclado.
+ * FUNCOES PARA GERENCIAMENTO DE MOUSE E TECLADO
  */
 
 /*----------------------------------------------------------------------------------------*/
 // BIBLIOTECAS
 
 #include "input.h"
+#include <cmath>
+#include <chrono>
 #include <iostream>
 #include <GL/glut.h>
 
 /*----------------------------------------------------------------------------------------*/
-// IMPLEMENTACAO DAS FUNCOES
+// IMPLEMENTACAO DE FUNCOES
 
 void input::keyboardDown(unsigned char key, int x, int y) {
     pressedKeys[(int)key] = true;
-
-    // Finalizar simulação (esc)
-    if((int)key == 27) {
-        glutDestroyWindow(0); 
-        exit(0);
-    }
 }
 
 void input::keyboardUp(unsigned char key, int x, int y) {
@@ -42,12 +38,22 @@ void input::mouseManager(int button, int state, int x, int y) {
         case 1: break;
         case 2: break;
         case 3:
-            if(state == GLUT_DOWN)
-                mouseWheelCount--;
+            if(state == GLUT_DOWN) {
+                auto current_time = std::chrono::system_clock::now();
+                auto duration_in_seconds = std::chrono::duration<double>(current_time.time_since_epoch());
+                double num_seconds = duration_in_seconds.count();
+                lastScrollIndex = (lastScrollIndex + 1) % MAX_MOUSE_WHEEL_BUFFER;
+                scrollTimestamps[lastScrollIndex] = -num_seconds;
+            }
             break;
         case 4:
-            if(state == GLUT_DOWN) 
-                mouseWheelCount++;
+            if(state == GLUT_DOWN) {
+                auto current_time = std::chrono::system_clock::now();
+                auto duration_in_seconds = std::chrono::duration<double>(current_time.time_since_epoch());
+                double num_seconds = duration_in_seconds.count();
+                lastScrollIndex = (lastScrollIndex + 1) % MAX_MOUSE_WHEEL_BUFFER;
+                scrollTimestamps[lastScrollIndex] = num_seconds;
+            }
             break;
     }
 }
@@ -110,25 +116,20 @@ short input::getMouseButtonAxis() {
     return 0;
 }
 
-short input::getMouseWheel() {
+short input::getMouseWheel(double thresholdTime) {
+    int mouseWheelCount = 0;
+
+    for(int i = 0; i < MAX_MOUSE_WHEEL_BUFFER; i++) {
+        int index = (lastScrollIndex - i) % MAX_MOUSE_WHEEL_BUFFER;
+        if(abs(scrollTimestamps[index]) < thresholdTime)
+            break;
+        mouseWheelCount += scrollTimestamps[index] > 0 ? 1 : -1;
+    }
+
     if(mouseWheelCount > 0)
-    {
-        mouseWheelCount--;
-
-        if(mouseWheelCount > 5)
-            mouseWheelCount = 5;
-
         return 1;
-    }
     else if(mouseWheelCount < 0) 
-    {
-        mouseWheelCount++;
-
-        if(mouseWheelCount < -5)
-            mouseWheelCount = -5;
-
         return -1;
-    }
     else
         return 0;
 }
