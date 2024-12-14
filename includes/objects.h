@@ -70,6 +70,7 @@ private:
     Point points[MAX_POINTS];
     void load(std::string object);
 public:
+    Object();
     Object(std::string object);
     Object(std::string object, double scale);
     void setScale(double scale);

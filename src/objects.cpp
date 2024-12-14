@@ -124,6 +124,10 @@ Point Face::getPoint(unsigned index) {
 
 /*------------------------- OBJECTS -------------------------*/
 
+Object::Object() {
+    setScale(1.0); 
+}
+
 Object::Object(std::string object) {
     setScale(1.0);
     load(object);
