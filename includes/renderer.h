@@ -19,7 +19,10 @@ private:
 
     void emptyBuffer();
     void updateBuffer();
-    void insertBuffer(Object object);
+    void insertLineBuffer(Line line);
+    void insertFaceBuffer(Face face);
+    void insertObjectBuffer(Object object);
+    double distToCamera(Point p);
 public:
     Renderer();
     void render();

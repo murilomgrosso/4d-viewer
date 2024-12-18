@@ -75,6 +75,14 @@ Point Line::getPoint(unsigned index) {
     return *points[index];
 }
 
+Point Line::getCentralPoint() {
+    Point p = *points[0];
+    for(int i = 1; i < 2; i++)
+        for(int j = 0; j < MAX_DIMENSIONS; j++)
+            p.setPosition(p.getPosition(j) + points[i]->getPosition(j)/2, j);
+    return p;
+}
+
 /*------------------------- FACE -------------------------*/
 Face::Face() {}
 Face::Face(Point* p1, Point* p2, Point* p3) {
@@ -120,6 +128,14 @@ Point Face::getPoint(unsigned index) {
         return emptyPoint;
     }
     return *points[index];
+}
+
+Point Face::getCentralPoint() {
+    Point p = *points[0];
+    for(int i = 1; i < 3; i++)
+        for(int j = 0; j < MAX_DIMENSIONS; j++)
+            p.setPosition(p.getPosition(j) + points[i]->getPosition(j)/3, j);
+    return p;
 }
 
 /*------------------------- OBJECTS -------------------------*/

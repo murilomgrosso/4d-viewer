@@ -39,6 +39,7 @@ public:
     float green();
     float blue();
     Point getPoint(unsigned index);
+    Point getCentralPoint();
 };
 
 class Face {
@@ -56,6 +57,7 @@ public:
     float green();
     float blue();
     Point getPoint(unsigned index);
+    Point getCentralPoint();
 };
 
 class Object{

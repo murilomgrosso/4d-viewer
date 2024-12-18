@@ -1,6 +1,16 @@
+/*
+TODO:
+    descartar faces fora da view
+    descartar faces que nao estao viradas para camera
+    ordenar buffer de renderizacao
+    verificar se está na frente ou atras da camera
+    distancia n dimensional?
+*/
+
 #include <iostream>
 #include <GL/glut.h>
 #include <GL/gl.h>
+#include <cmath>
 #include "objects.h"
 #include "renderer.h"
 
@@ -72,35 +82,93 @@ void Renderer::emptyBuffer() {
     nFaces = 0;
 }
 
-void Renderer::insertBuffer(Object object) {
+void Renderer::insertLineBuffer(Line line) {
+    if(nLines > MAX_LINES_RENDERS - 1) {
+        std::cerr << "Line render buffer overflow!" << std::endl;
+        return;
+    }
+
+    int l = 0;
+    int r = nLines;
+    int m = (l + r) / 2;
+
+    double mDist;
+    double dist = distToCamera(line.getCentralPoint());
+
+    while(l < r) {
+        mDist = distToCamera(linesBuffer[m].getCentralPoint());
+
+        if(dist < mDist)
+            l = m + 1;
+        else if(dist > mDist)
+            r = m;
+        else
+            break;
+
+        m = (l + r) / 2;
+    }
+
+    Line temp;
+
+    nLines++;
+    for(int i = m; i < nLines; i++) {
+        temp = linesBuffer[i];
+        linesBuffer[i] = line;
+        line = temp;
+    }
+}
+
+void Renderer::insertFaceBuffer(Face face) {
+    if(nFaces > MAX_FACE_RENDERS - 1) {
+        std::cerr << "Face render buffer overflow!" << std::endl;
+        return;
+    }
+
+    int l = 0;
+    int r = nFaces;
+    int m = (l + r) / 2;
+
+    double mDist;
+    double dist = distToCamera(face.getCentralPoint());
+
+    while(l < r) {
+        mDist = distToCamera(facesBuffer[m].getCentralPoint());
+
+        if(dist < mDist)
+            l = m + 1;
+        else if(dist > mDist)
+            r = m;
+        else
+            break;
+
+        m = (l + r) / 2;
+    }
+
+    Face temp;
+
+    nFaces++;
+    for(int i = m; i < nFaces; i++) {
+        temp = facesBuffer[i];
+        facesBuffer[i] = face;
+        face = temp;
+    }
+}
+
+void Renderer::insertObjectBuffer(Object object) {
     Line line;
     Face face;
 
-    for(int i = 0; object.getLine(line, i); i++) {
-        if(nLines > MAX_LINES_RENDERS - 1) {
-            std::cerr << "Line render buffer overflow!" << std::endl;
-            return;
-        }
+    for(int i = 0; object.getLine(line, i); i++)
+        insertLineBuffer(line);
 
-        linesBuffer[nLines] = line;
-        nLines++;
-    }
-
-    for(int i = 0; object.getFace(face, i); i++) {
-        if(nFaces > MAX_FACE_RENDERS - 1) {
-            std::cerr << "Face render buffer overflow!" << std::endl;
-            return;
-        }
-
-        facesBuffer[nFaces] = face;
-        nFaces++;
-    }   
+    for(int i = 0; object.getFace(face, i); i++)
+        insertFaceBuffer(face);   
 }
 
 void Renderer::updateBuffer() {
     emptyBuffer();
     for(int i = 0; i < nObjects; i++)
-        insertBuffer(objectsToRender[i]);
+        insertObjectBuffer(objectsToRender[i]);
 }
 
 void Renderer::addObject(Object object) {
@@ -111,4 +179,16 @@ void Renderer::addObject(Object object) {
 
     objectsToRender[nObjects] = object;
     nObjects++;
+}
+
+double Renderer::distToCamera(Point p) {
+    // POR ENQUANTO APENAS DISTANCIA 3D
+    double dist = 0;
+
+    dist += std::pow(xcp - p.getPosition(0), 2);
+    dist += std::pow(ycp - p.getPosition(1), 2);
+    dist += std::pow(zcp - p.getPosition(2), 2);
+    dist = std::sqrt(dist);
+
+    return dist;
 }
